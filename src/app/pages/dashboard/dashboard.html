@@ -1,0 +1,284 @@
+<div class="ecpr-container">
+  <!-- Header AREU Style -->
+  <mat-toolbar color="primary" class="ecpr-header">
+    <mat-icon>local_hospital</mat-icon>
+    <span class="header-title">118 - Schede Rapide</span>
+    <span class="spacer"></span>
+    <button mat-icon-button [matMenuTriggerFor]="menu">
+      <mat-icon>account_circle</mat-icon>
+    </button>
+    <mat-menu #menu="matMenu">
+      <button mat-menu-item (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        <span>Logout</span>
+      </button>
+    </mat-menu>
+  </mat-toolbar>
+
+  <div class="ecpr-content">
+    <!-- Form Card -->
+    <mat-card class="patient-form">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>person_add</mat-icon>
+          Nuova Rilevazione
+        </mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        <form class="vital-signs-form">
+          <!-- ID Paziente -->
+          <mat-form-field appearance="fill" class="full-width">
+            <mat-label>ID Paziente</mat-label>
+            <input matInput [(ngModel)]="patientId" name="patientId" required />
+            <mat-icon matPrefix>badge</mat-icon>
+          </mat-form-field>
+
+          <!-- Parametri Vitali -->
+          <div class="vitals-grid">
+            <mat-form-field appearance="fill" class="vital-field">
+              <mat-label>PA (mmHg)</mat-label>
+              <input matInput [(ngModel)]="pressure" name="pressure" placeholder="120/80" />
+              <mat-icon matPrefix color="warn">favorite</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill" class="vital-field">
+              <mat-label>FC (bpm)</mat-label>
+              <input matInput type="number" [(ngModel)]="hr" name="hr" min="0" max="300" />
+              <mat-icon matPrefix color="accent">monitor_heart</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill" class="vital-field">
+              <mat-label>SpO₂ (%)</mat-label>
+              <input matInput type="number" [(ngModel)]="spo2" name="spo2" min="0" max="100" />
+              <mat-icon matPrefix class="spo2-icon">air</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <!-- Note -->
+          <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Note cliniche</mat-label>
+            <textarea 
+              matInput 
+              [(ngModel)]="note" 
+              name="note" 
+              rows="4"
+              placeholder="Annotazioni, terapia somministrata, altro..."
+            ></textarea>
+            <mat-icon matPrefix>notes</mat-icon>
+          </mat-form-field>
+
+          <!-- Messaggi -->
+          <div *ngIf="message()" class="message-alert">
+            <mat-icon>check_circle</mat-icon>
+            <span>{{ message() }}</span>
+          </div>
+
+          <div *ngIf="error()" class="error-alert">
+            <mat-icon>error</mat-icon>
+            <span>{{ error() }}</span>
+          </div>
+        </form>
+      </mat-card-content>
+
+      <mat-card-actions>
+        <button mat-raised-button color="primary" (click)="save()" class="save-btn">
+          <mat-icon>save</mat-icon>
+          Salva Rilevazione
+        </button>
+      </mat-card-actions>
+    </mat-card>
+
+    <!-- Grafici Dashboard -->
+    <mat-card class="charts-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>analytics</mat-icon>
+          Andamento Parametri Vitali
+        </mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        <mat-tab-group>
+          <mat-tab>
+            <ng-template mat-tab-label>
+              <mat-icon>favorite</mat-icon>
+              PA
+            </ng-template>
+            <div class="chart-container">
+              <canvas id="pressureChart"></canvas>
+            </div>
+          </mat-tab>
+
+          <mat-tab>
+            <ng-template mat-tab-label>
+              <mat-icon>monitor_heart</mat-icon>
+              FC
+            </ng-template>
+            <div class="chart-container">
+              <canvas id="hrChart"></canvas>
+            </div>
+          </mat-tab>
+
+          <mat-tab>
+            <ng-template mat-tab-label>
+              <mat-icon>air</mat-icon>
+              SpO₂
+            </ng-template>
+            <div class="chart-container">
+              <canvas id="spo2Chart"></canvas>
+            </div>
+          </mat-tab>
+        </mat-tab-group>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Lista Pazienti con Filtri -->
+  <div class="patients-section">
+    <mat-card class="patients-list">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>assignment</mat-icon>
+          Pazienti Registrati
+          <span class="patient-count">({{ filteredPatients().length }})</span>
+        </mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        <!-- Filtri -->
+        <div class="filters-section">
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Cerca ID Paziente</mat-label>
+            <input matInput [(ngModel)]="searchId" (ngModelChange)="applyFilters()" placeholder="Filtra per ID..." />
+            <mat-icon matPrefix>search</mat-icon>
+            <button mat-icon-button matSuffix *ngIf="searchId" (click)="searchId=''; applyFilters()">
+              <mat-icon>close</mat-icon>
+            </button>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Ordinamento</mat-label>
+            <mat-select [(ngModel)]="sortBy" (ngModelChange)="applyFilters()">
+              <mat-option value="newest">Più recenti</mat-option>
+              <mat-option value="oldest">Meno recenti</mat-option>
+              <mat-option value="id">ID Paziente</mat-option>
+              <mat-option value="hr">FC (crescente)</mat-option>
+              <mat-option value="spo2">SpO₂ (crescente)</mat-option>
+            </mat-select>
+            <mat-icon matPrefix>sort</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Filtra per criticità</mat-label>
+            <mat-select [(ngModel)]="criticalityFilter" (ngModelChange)="applyFilters()">
+              <mat-option value="all">Tutti</mat-option>
+              <mat-option value="critical">Critici (SpO₂ < 90)</mat-option>
+              <mat-option value="warning">Attenzione (SpO₂ 90-94)</mat-option>
+              <mat-option value="normal">Normali (SpO₂ ≥ 95)</mat-option>
+            </mat-select>
+            <mat-icon matPrefix>warning</mat-icon>
+          </mat-form-field>
+
+          <button mat-raised-button (click)="resetFilters()" class="reset-btn">
+            <mat-icon>refresh</mat-icon>
+            Reset
+          </button>
+        </div>
+
+        <!-- Statistiche rapide -->
+        <div class="stats-row">
+          <div class="stat-card critical">
+            <mat-icon>error</mat-icon>
+            <div>
+              <div class="stat-value">{{ getCriticalCount() }}</div>
+              <div class="stat-label">Critici</div>
+            </div>
+          </div>
+          <div class="stat-card warning">
+            <mat-icon>warning</mat-icon>
+            <div>
+              <div class="stat-value">{{ getWarningCount() }}</div>
+              <div class="stat-label">Attenzione</div>
+            </div>
+          </div>
+          <div class="stat-card normal">
+            <mat-icon>check_circle</mat-icon>
+            <div>
+              <div class="stat-value">{{ getNormalCount() }}</div>
+              <div class="stat-label">Normali</div>
+            </div>
+          </div>
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <!-- Lista pazienti -->
+        <div *ngIf="filteredPatients().length === 0" class="no-patients">
+          <mat-icon>inbox</mat-icon>
+          <p>Nessun paziente trovato</p>
+        </div>
+
+        <mat-accordion *ngIf="filteredPatients().length > 0">
+          <mat-expansion-panel *ngFor="let p of filteredPatients()" 
+                               [class.critical-patient]="isCritical(p)"
+                               [class.warning-patient]="isWarning(p)"
+                               class="patient-panel">
+            <mat-expansion-panel-header>
+              <mat-panel-title>
+                <mat-icon class="patient-icon" [class.critical-icon]="isCritical(p)" [class.warning-icon]="isWarning(p)">
+                  {{ isCritical(p) ? 'error' : isWarning(p) ? 'warning' : 'person' }}
+                </mat-icon>
+                <strong>{{ p.patientId }}</strong>
+              </mat-panel-title>
+              <mat-panel-description>
+                <span class="criticality-badge" *ngIf="isCritical(p)">CRITICO</span>
+                <span class="criticality-badge warning" *ngIf="isWarning(p)">ATTENZIONE</span>
+                <span class="timestamp" *ngIf="p.createdAt">
+                  <mat-icon>schedule</mat-icon>
+                  {{ p.createdAt | date:'dd/MM/yy HH:mm' }}
+                </span>
+              </mat-panel-description>
+            </mat-expansion-panel-header>
+
+            <div class="patient-details">
+              <div class="vital-row" [class.critical-vital]="isCritical(p)">
+                <mat-icon color="warn">favorite</mat-icon>
+                <span class="vital-label">PA:</span>
+                <span class="vital-value">{{ p.vitals?.pressure || 'N/D' }}</span>
+              </div>
+
+              <div class="vital-row">
+                <mat-icon color="accent">monitor_heart</mat-icon>
+                <span class="vital-label">FC:</span>
+                <span class="vital-value">{{ p.vitals?.hr || 'N/D' }} bpm</span>
+              </div>
+
+              <div class="vital-row" [class.critical-vital]="isCritical(p)" [class.warning-vital]="isWarning(p)">
+                <mat-icon class="spo2-icon">air</mat-icon>
+                <span class="vital-label">SpO₂:</span>
+                <span class="vital-value">{{ p.vitals?.spo2 || 'N/D' }} %</span>
+              </div>
+
+              <mat-divider *ngIf="p.vitals?.note"></mat-divider>
+
+              <div class="notes-section" *ngIf="p.vitals?.note">
+                <mat-icon>notes</mat-icon>
+                <p>{{ p.vitals?.note }}</p>
+              </div>
+
+              <mat-divider></mat-divider>
+
+              <div class="action-buttons">
+                <button mat-button color="primary" (click)="viewTrend(p)">
+                  <mat-icon>timeline</mat-icon>
+                  Andamento
+                </button>
+              </div>
+            </div>
+          </mat-expansion-panel>
+        </mat-accordion>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

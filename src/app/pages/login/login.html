@@ -1,0 +1,41 @@
+<div class="login-wrapper">
+  <h2>118 - Accesso</h2>
+
+  <form (ngSubmit)="onSubmit()">
+    <mat-form-field appearance="outline">
+      <mat-label>Email</mat-label>
+      <input 
+        matInput 
+        [(ngModel)]="email" 
+        name="email" 
+        type="email" 
+        required 
+        placeholder="esempio@118.it"
+      />
+      <mat-icon matPrefix>email</mat-icon>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Password</mat-label>
+      <input 
+        matInput 
+        [(ngModel)]="password" 
+        name="password" 
+        type="password" 
+        required 
+      />
+      <mat-icon matPrefix>lock</mat-icon>
+    </mat-form-field>
+
+    <div class="button-group">
+      <button mat-raised-button color="primary" type="submit">
+        Entra
+      </button>
+    </div>
+
+    <mat-error *ngIf="error()">
+      <mat-icon>error</mat-icon>
+      {{ error() }}
+    </mat-error>
+  </form>
+</div>
